@@ -6,7 +6,7 @@ static Node nodes[LIST_MAX_NUM_NODES_OOB];
 static List lists[LIST_MAX_NUM_HEADS];
 static unsigned int removedNodes[LIST_MAX_NUM_NODES_OOB];
 static unsigned int removedIndex = 0;
-static unsigned int nodeArm = LIST_MAX_NUM_NODES_OOB - 1;
+static unsigned int nodeArm = LIST_MAX_NUM_NODES_OOB - 1; // starts from last index
 
 
 // Makes a new, empty list, and returns its reference on success. 
@@ -110,7 +110,6 @@ int List_add(List* pList, void* pItem)
 		pList->head = NodeIndex;
 		pList->tail = NodeIndex;
 		pList->currNode = NodeIndex;
-		++(pList->itemCount);
 
 		nodes[pList->currNode].itemP = pItem;
 		nodes[pList->currNode].nextNode = LIST_OOB_END;
@@ -128,7 +127,6 @@ int List_add(List* pList, void* pItem)
 			nodes[NodeIndex].itemP = pItem;
 			pList->head = NodeIndex;
 			pList->currNode = NodeIndex;
-			++(pList->itemCount);
 		}
 		//Current pointer after end
 		else if(pList->currNode == LIST_OOB_END)
@@ -139,7 +137,21 @@ int List_add(List* pList, void* pItem)
 			nodes[NodeIndex].itemP = pItem;
 			pList->tail = NodeIndex;
 			pList->currNode = NodeIndex;
-			++(pList->itemCount);
+		}
+		//At head
+		else if(pList->currNode == pList->head)
+		{
+			unsigned int nextNodeTemp = nodes[pList->head].nextNode;
+			nodes[pList->head].nextNode = NodeIndex;
+			nodes[NodeIndex].prevNode = pList->head;
+			nodes[NodeIndex].nextNode = nextNodeTemp;
+			nodes[NodeIndex].itemP = pItem;
+			nodes[nextNodeTemp].prevNode = NodeIndex;
+			pList->currNode = NodeIndex;
+		}
+		else if(pList->currNode == pList->tail)
+		{
+
 		}
 		//Current pointer somewhere in middle
 		else
@@ -151,9 +163,9 @@ int List_add(List* pList, void* pItem)
 			nodes[nextNodeTemp].prevNode = NodeIndex;
 			pList->currNode = NodeIndex;
 			nodes[NodeIndex].itemP = pItem;
-			++(pList->itemCount);
 		}
 	}
+	++(pList->itemCount);
 	return 0;
 }
 /*
@@ -192,12 +204,11 @@ void* List_remove(List* pList)
 	{
 		item = nodes[pList->currNode].itemP;
 		//Handles removal backtracking
-		++removedIndex;
-		removedNodes[removedIndex] = pList->currNode;
+		removedNodes[++removedIndex] = pList->currNode;
 
 		//If there is only one item in the list(head == tail)
 		if(pList->head == pList->tail)
-		{
+		{ printf("KORCAN");
 			//Reset the node
 			nodes[pList->currNode].itemP = NULL;
 			nodes[pList->currNode].nextNode = 0; //UNNECESSARY
@@ -313,10 +324,10 @@ int main()
 		int t = List_add(mylist,&a);
 		printf("%d \n ",t);
 	}
-	/*for(int i = 0;i<105;i++)
+	for(int i = 0;i<103;i++)
 	{
 		int t = List_add(mylist,&a);
 		printf("%d \n ",*(unsigned int*)List_remove(mylist));
-	}*/
+	}
 	return 0;
 }
