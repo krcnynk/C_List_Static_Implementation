@@ -7,22 +7,22 @@ static List lists[LIST_MAX_NUM_HEADS];
 static unsigned int removedNodes[LIST_MAX_NUM_NODES_OOB];
 static unsigned int removedIndex = 0;
 static unsigned int nodeArm = LIST_MAX_NUM_NODES_OOB - 1; // starts from last index
-
+static bool listAvailable[LIST_MAX_NUM_HEADS];
 
 // Makes a new, empty list, and returns its reference on success. 
 // Returns a NULL pointer on failure.
 List* List_create()
 {
-
 	for(int i = 0;i < LIST_MAX_NUM_HEADS;++i)
 	{
-		if(lists[i].itemCount == 0)
+		if(!listAvailable[i])
 		{
+			listAvailable[i] = true;
 			return &(lists[i]);
 		}
 	}
 
-
+	return NULL;
 }
 
 // Returns the number of items in pList.
@@ -90,7 +90,7 @@ int List_add(List* pList, void* pItem)
 	//Node array full
 	if(removedIndex == 0 && nodeArm == 1)
 	{
-		printf("%d \n",pList->itemCount);
+		printf("K1 %d \n",pList->itemCount);
 		return -1;
 	}
 	//Not disjoint
@@ -103,7 +103,7 @@ int List_add(List* pList, void* pItem)
 	{
 		NodeIndex = removedNodes[removedIndex--];
 	}
-
+	printf("Going to write NodeIndex : %d \n",NodeIndex);
 	// If the list is empty
 	if(pList->itemCount == 0)
 	{
@@ -138,16 +138,26 @@ int List_add(List* pList, void* pItem)
 			pList->tail = NodeIndex;
 			pList->currNode = NodeIndex;
 		}
-		//Current pointer somewhere in middle
+		//Current pointer at the last node(one head or last node)
+		else if(pList->currNode == pList->tail)
+		{
+			nodes[pList->currNode].nextNode = NodeIndex;
+			nodes[NodeIndex].prevNode = pList->currNode;
+			nodes[NodeIndex].nextNode = LIST_OOB_END;
+			nodes[NodeIndex].itemP = pItem;
+			pList->currNode = NodeIndex;
+			pList->tail = NodeIndex;
+		}
+		// Current pointer has a front neighbour
 		else
 		{
 			unsigned int nextNodeTemp = nodes[pList->currNode].nextNode;
 			nodes[pList->currNode].nextNode = NodeIndex;
 			nodes[NodeIndex].prevNode = pList->currNode;
 			nodes[NodeIndex].nextNode = nextNodeTemp;
+			nodes[NodeIndex].itemP = pItem;
 			nodes[nextNodeTemp].prevNode = NodeIndex;
 			pList->currNode = NodeIndex;
-			nodes[NodeIndex].itemP = pItem;
 		}
 	}
 	++(pList->itemCount);
@@ -193,7 +203,7 @@ void* List_remove(List* pList)
 
 		//If there is only one item in the list(head == tail)
 		if(pList->head == pList->tail)
-		{ printf("KORCAN");
+		{
 			//Reset the node
 			nodes[pList->currNode].itemP = NULL;
 			nodes[pList->currNode].nextNode = 0; //UNNECESSARY
@@ -300,19 +310,43 @@ void* List_search(List* pList, COMPARATOR_FN pComparator, void* pComparisonArg)
 	
 }
 */
+void printAllNodes()
+{
+	for(int i = 0;i<LIST_MAX_NUM_NODES_OOB;++i)
+	{
+		if(nodes[i].itemP != NULL)
+			printf("Item : %d, Next : %u, Prev : %u --> \n",*(unsigned int*)nodes[i].itemP,nodes[i].nextNode,nodes[i].prevNode);
+		else
+			printf("Item : %d, Next : %u, Prev : %u --> \n",-1,nodes[i].nextNode,nodes[i].prevNode);
+	}
+}
+void printAllLists()
+{
+	for(int i = 0;i<LIST_MAX_NUM_HEADS;++i)
+	{
+		printf("head : %u, tail : %u, currNode : %u, itemCount : %u--> \n",lists[i].head,lists[i].tail,lists[i].currNode,lists[i].itemCount);
+	}
+}
 int main()
 {
-	List* mylist = List_create();
+	List* mylist[LIST_MAX_NUM_HEADS];
+	for(int i =0;i<LIST_MAX_NUM_HEADS;i++)
+	{
+		mylist[i] = List_create();
+	}
 	int a = 33;
-	for(int i = 0;i<102;i++)
+	for(int i = 0;i<10;i++)
 	{
-		int t = List_add(mylist,&a);
-		printf("%d \n ",t);
+		for(int x = 0;x<11;x++)
+		List_add(mylist[i],&a);
 	}
-	for(int i = 0;i<103;i++)
-	{
-		int t = List_add(mylist,&a);
-		printf("%d \n ",*(unsigned int*)List_remove(mylist));
-	}
+
+	printAllNodes();
+	printAllLists();
+//	for(int i = 0;i<103;i++)
+//	{
+//		int t = List_add(mylist,&a);
+//		printf("%d \n ",*(unsigned int*)List_remove(mylist));
+//	}
 	return 0;
 }
