@@ -138,21 +138,6 @@ int List_add(List* pList, void* pItem)
 			pList->tail = NodeIndex;
 			pList->currNode = NodeIndex;
 		}
-		//At head
-		else if(pList->currNode == pList->head)
-		{
-			unsigned int nextNodeTemp = nodes[pList->head].nextNode;
-			nodes[pList->head].nextNode = NodeIndex;
-			nodes[NodeIndex].prevNode = pList->head;
-			nodes[NodeIndex].nextNode = nextNodeTemp;
-			nodes[NodeIndex].itemP = pItem;
-			nodes[nextNodeTemp].prevNode = NodeIndex;
-			pList->currNode = NodeIndex;
-		}
-		else if(pList->currNode == pList->tail)
-		{
-
-		}
 		//Current pointer somewhere in middle
 		else
 		{
