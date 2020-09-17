@@ -2,11 +2,11 @@
 #include <stddef.h>
 #include <stdio.h>
 
-static Node nodes[LIST_MAX_NUM_NODES+2]; // +2 to accompany the 0 and 1 OOBs
+static Node nodes[LIST_MAX_NUM_NODES_OOB];
 static List lists[LIST_MAX_NUM_HEADS];
-static unsigned int removedNodes[LIST_MAX_NUM_NODES];
+static unsigned int removedNodes[LIST_MAX_NUM_NODES_OOB];
 static unsigned int removedIndex = 0;
-static unsigned int nodeArm = LIST_MAX_NUM_NODES;
+static unsigned int nodeArm = LIST_MAX_NUM_NODES_OOB - 1;
 
 
 // Makes a new, empty list, and returns its reference on success. 
@@ -86,21 +86,22 @@ void* List_curr(List* pList)
 int List_add(List* pList, void* pItem)
 {
 	//Handles removal backtracking(removedIndex 0 means non disjoint array, 0> disjoint)
-	int nodeIndex;
+	int NodeIndex;
 	//Node array full
 	if(removedIndex == 0 && nodeArm == 1)
 	{
+		printf("%d \n",pList->itemCount);
 		return -1;
 	}
 	//Not disjoint
 	else if(removedIndex == 0)
 	{
-		nodeIndex = --nodeArm;
+		NodeIndex = nodeArm--;
 	}
 	//Disjoint
 	else
 	{
-		nodeIndex = removedNodes[removedIndex--];
+		NodeIndex = removedNodes[removedIndex--];
 	}
 
 	// If the list is empty
@@ -204,7 +205,7 @@ void* List_remove(List* pList)
 			//Reset the list 
 			pList->head = 0;
 			pList->tail = 0;
-			pList->currentNode = 0;
+			pList->currNode = 0;
 			pList->itemCount = 0;
 		}
 		//If current node is looking at head and multiple entries
@@ -219,10 +220,10 @@ void* List_remove(List* pList)
 			nodes[pList->currNode].nextNode = 0;
 			nodes[pList->currNode].prevNode = 0;//UNNECESSARY
 			//Fix next nodes prev connection
-			nodes[tempNextNode].prevNode = LIST_OOB_START
+			nodes[tempNextNode].prevNode = LIST_OOB_START;
 			//Change head and current to next
 			pList->head = tempNextNode;
-			pList->currentNode = tempNextNode;
+			pList->currNode = tempNextNode;
 			--pList->itemCount;
 		}
 		//If current node is looking at tail and multiple entries
@@ -236,7 +237,7 @@ void* List_remove(List* pList)
 			nodes[pList->currNode].nextNode = 0;//UNNECESSARY
 			nodes[pList->currNode].prevNode = 0;
 			//Fix prev nodes next connection
-			nodes[tempPrevNode].nextNode = LIST_OOB_END
+			nodes[tempPrevNode].nextNode = LIST_OOB_END;
 			//Change tail and current to next
 			pList->tail = tempPrevNode;
 			pList->currNode = tempPrevNode;
@@ -307,10 +308,15 @@ int main()
 {
 	List* mylist = List_create();
 	int a = 33;
-	for(int i = 0;i<103;i++)
+	for(int i = 0;i<102;i++)
 	{
-		printf("%d \n ",List_add(mylist,&a));
+		int t = List_add(mylist,&a);
+		printf("%d \n ",t);
 	}
-
+	/*for(int i = 0;i<105;i++)
+	{
+		int t = List_add(mylist,&a);
+		printf("%d \n ",*(unsigned int*)List_remove(mylist));
+	}*/
 	return 0;
 }
