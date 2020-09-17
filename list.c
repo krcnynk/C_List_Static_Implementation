@@ -327,6 +327,18 @@ void printAllLists()
 		printf("head : %u, tail : %u, currNode : %u, itemCount : %u--> \n",lists[i].head,lists[i].tail,lists[i].currNode,lists[i].itemCount);
 	}
 }
+
+void printOneList(List* Plist)
+{
+	unsigned int head = Plist->head;
+	printf("prev : %u,",nodes[head].prevNode);
+	while( head != LIST_OOB_END)
+	{
+		printf("next : %u --> ",nodes[head].nextNode);
+		head = nodes[head].nextNode;
+	}
+	printf("\n");
+}
 int main()
 {
 	List* mylist[LIST_MAX_NUM_HEADS];
@@ -335,14 +347,16 @@ int main()
 		mylist[i] = List_create();
 	}
 	int a = 33;
-	for(int i = 0;i<10;i++)
+	for(int i = 0;i<3;i++)
 	{
-		for(int x = 0;x<11;x++)
+		for(int x = 0;x<40;x++)
 		List_add(mylist[i],&a);
+
+	printOneList(mylist[i]);
 	}
 
-	printAllNodes();
-	printAllLists();
+	//printAllNodes();
+	//printAllLists();
 //	for(int i = 0;i<103;i++)
 //	{
 //		int t = List_add(mylist,&a);
