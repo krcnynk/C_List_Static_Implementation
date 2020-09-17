@@ -2,9 +2,8 @@
 #include <stddef.h>
 #include <stdio.h>
 
-static Node nodes[LIST_MAX_NUM_NODES];
+static Node nodes[LIST_MAX_NUM_NODES+2]; // +2 to accompany the 0 and 1 OOBs
 static List lists[LIST_MAX_NUM_HEADS];
-static unsigned int usedListIndex = 0;
 static unsigned int removedNodes[LIST_MAX_NUM_NODES];
 static unsigned int removedIndex = 0;
 static unsigned int nodeArm = LIST_MAX_NUM_NODES;
@@ -14,12 +13,15 @@ static unsigned int nodeArm = LIST_MAX_NUM_NODES;
 // Returns a NULL pointer on failure.
 List* List_create()
 {
-	if(usedListIndex >= 10)
-		return NULL;
-	else
+
+	for(int i = 0;i < LIST_MAX_NUM_HEADS;++i)
 	{
-		return &(lists[usedListIndex++]);
+		if(lists[i].itemCount == 0)
+		{
+			return &(lists[i]);
+		}
 	}
+
 
 }
 
@@ -57,7 +59,7 @@ void* List_last(List* pList)
 		nodes[pList->currNode].itemP = NULL;
 		return NULL;
 	}
-}
+}/*
 // Advances pList's current item by one, and returns a pointer to the new current item.
 // If this operation advances the current item beyond the end of the pList, a NULL pointer 
 // is returned and the current item is set to be beyond end of pList.
@@ -76,7 +78,7 @@ void* List_prev(List* pList)
 void* List_curr(List* pList)
 {
 	
-}
+}*/
 // Adds the new item to pList directly after the current item, and makes item the current item. 
 // If the current pointer is before the start of the pList, the item is added at the start. If 
 // the current pointer is beyond the end of the pList, the item is added at the end. 
@@ -85,18 +87,20 @@ int List_add(List* pList, void* pItem)
 {
 	//Handles removal backtracking(removedIndex 0 means non disjoint array, 0> disjoint)
 	int nodeIndex;
+	//Node array full
 	if(removedIndex == 0 && nodeArm == 1)
 	{
 		return -1;
 	}
+	//Not disjoint
 	else if(removedIndex == 0)
 	{
-		nodeIndex = nodeArm - 1;
+		nodeIndex = --nodeArm;
 	}
+	//Disjoint
 	else
 	{
-		nodeIndex = removedNodes[removedIndex];
-		--removedIndex;
+		nodeIndex = removedNodes[removedIndex--];
 	}
 
 	// If the list is empty
@@ -140,20 +144,18 @@ int List_add(List* pList, void* pItem)
 		else
 		{
 			unsigned int nextNodeTemp = nodes[pList->currNode].nextNode;
-			//connect current node to inserted
 			nodes[pList->currNode].nextNode = NodeIndex;
 			nodes[NodeIndex].prevNode = pList->currNode;
-			// connect inserted to to next node
 			nodes[NodeIndex].nextNode = nextNodeTemp;
 			nodes[nextNodeTemp].prevNode = NodeIndex;
-			//change currNode to inserted
 			pList->currNode = NodeIndex;
 			nodes[NodeIndex].itemP = pItem;
+			++(pList->itemCount);
 		}
 	}
 	return 0;
 }
-
+/*
 // Adds item to pList directly before the current item, and makes the new item the current one. 
 // If the current pointer is before the start of the pList, the item is added at the start. 
 // If the current pointer is beyond the end of the pList, the item is added at the end. 
@@ -173,7 +175,7 @@ int List_append(List* pList, void* pItem)
 int List_prepend(List* pList, void* pItem)
 {
 	
-}
+}*/
 // Return current item and take it out of pList. Make the next item the current one.
 // If the current pointer is before the start of the pList, or beyond the end of the pList,
 // then do not change the pList and return NULL.
@@ -237,16 +239,30 @@ void* List_remove(List* pList)
 			nodes[tempPrevNode].nextNode = LIST_OOB_END
 			//Change tail and current to next
 			pList->tail = tempPrevNode;
-			pList->currentNode = tempPrevNode;
+			pList->currNode = tempPrevNode;
 			--pList->itemCount;
 		}
 		//Somewhere in middle
 		else
 		{
-
+			//Save temp data
+			item = nodes[pList->currNode].itemP;
+			unsigned int tempPrevNode = nodes[pList->currNode].prevNode;
+			unsigned int tempNextNode = nodes[pList->currNode].nextNode;
+			//Reset the node
+			nodes[pList->currNode].itemP = NULL;
+			nodes[pList->currNode].nextNode = 0;//UNNECESSARY
+			nodes[pList->currNode].prevNode = 0;
+			//Fix nodes connection
+			nodes[tempPrevNode].nextNode = tempNextNode;
+			nodes[tempNextNode].prevNode = tempPrevNode;
+			//Change current to next
+			pList->currNode = tempNextNode;
+			--pList->itemCount;
 		}
+		return item;
 	}
-}
+}/*
 // Adds pList2 to the end of pList1. The current pointer is set to the current pointer of pList1. 
 // pList2 no longer exists after the operation; its head is available
 // for future operations.
