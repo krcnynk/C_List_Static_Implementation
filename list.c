@@ -1,10 +1,15 @@
 #include "list.h"
 #include <stddef.h>
 #include <stdio.h>
+
 static Node nodes[LIST_MAX_NUM_NODES];
 static List lists[LIST_MAX_NUM_HEADS];
 static unsigned int usedListIndex = 0;
-static unsigned int currNodeIndex = LIST_MAX_NUM_NODES - 1;
+static unsigned int removedNodes[LIST_MAX_NUM_NODES];
+static unsigned int removedIndex = 0;
+static unsigned int nodeArm = LIST_MAX_NUM_NODES;
+
+
 // Makes a new, empty list, and returns its reference on success. 
 // Returns a NULL pointer on failure.
 List* List_create()
@@ -78,47 +83,57 @@ void* List_curr(List* pList)
 // Returns 0 on success, -1 on failure.
 int List_add(List* pList, void* pItem)
 {
-	if(currNodeIndex == LIST_OOB_END)
+	//Handles removal backtracking(removedIndex 0 means non disjoint array, 0> disjoint)
+	int nodeIndex;
+	if(removedIndex == 0 && nodeArm == 1)
 	{
 		return -1;
+	}
+	else if(removedIndex == 0)
+	{
+		nodeIndex = nodeArm - 1;
+	}
+	else
+	{
+		nodeIndex = removedNodes[removedIndex];
+		--removedIndex;
 	}
 
 	// If the list is empty
 	if(pList->itemCount == 0)
 	{
-		pList->head = currNodeIndex;
-		pList->tail = currNodeIndex;
-		pList->currNode = currNodeIndex;
+		pList->head = NodeIndex;
+		pList->tail = NodeIndex;
+		pList->currNode = NodeIndex;
 		++(pList->itemCount);
 
 		nodes[pList->currNode].itemP = pItem;
 		nodes[pList->currNode].nextNode = LIST_OOB_END;
 		nodes[pList->currNode].prevNode = LIST_OOB_START;
+		
 	}
-
 	else
 	{
-		--currNodeIndex;
 		//Current pointer before start
 		if(pList->currNode == LIST_OOB_START)
 		{
-			nodes[pList->head].prevNode = currNodeIndex;
-			nodes[currNodeIndex].nextNode = pList->head;
-			nodes[currNodeIndex].prevNode = LIST_OOB_START;
-			nodes[currNodeIndex].itemP = pItem;
-			pList->head = currNodeIndex;
-			pList->currNode = currNodeIndex;
+			nodes[pList->head].prevNode = NodeIndex;
+			nodes[NodeIndex].nextNode = pList->head;
+			nodes[NodeIndex].prevNode = LIST_OOB_START;
+			nodes[NodeIndex].itemP = pItem;
+			pList->head = NodeIndex;
+			pList->currNode = NodeIndex;
 			++(pList->itemCount);
 		}
 		//Current pointer after end
 		else if(pList->currNode == LIST_OOB_END)
 		{
-			nodes[pList->tail].nextNode = currNodeIndex;
-			nodes[currNodeIndex].prevNode = pList->tail;
-			nodes[currNodeIndex].nextNode = LIST_OOB_END;
-			nodes[currNodeIndex].itemP = pItem;
-			pList->tail = currNodeIndex;
-			pList->currNode = currNodeIndex;
+			nodes[pList->tail].nextNode = NodeIndex;
+			nodes[NodeIndex].prevNode = pList->tail;
+			nodes[NodeIndex].nextNode = LIST_OOB_END;
+			nodes[NodeIndex].itemP = pItem;
+			pList->tail = NodeIndex;
+			pList->currNode = NodeIndex;
 			++(pList->itemCount);
 		}
 		//Current pointer somewhere in middle
@@ -126,14 +141,14 @@ int List_add(List* pList, void* pItem)
 		{
 			unsigned int nextNodeTemp = nodes[pList->currNode].nextNode;
 			//connect current node to inserted
-			nodes[pList->currNode].nextNode = currNodeIndex;
-			nodes[currNodeIndex].prevNode = pList->currNode;
+			nodes[pList->currNode].nextNode = NodeIndex;
+			nodes[NodeIndex].prevNode = pList->currNode;
 			// connect inserted to to next node
-			nodes[currNodeIndex].nextNode = nextNodeTemp;
-			nodes[nextNodeTemp].prevNode = currNodeIndex;
+			nodes[NodeIndex].nextNode = nextNodeTemp;
+			nodes[nextNodeTemp].prevNode = NodeIndex;
 			//change currNode to inserted
-			pList->currNode = currNodeIndex;
-			nodes[currNodeIndex].itemP = pItem;
+			pList->currNode = NodeIndex;
+			nodes[NodeIndex].itemP = pItem;
 		}
 	}
 	return 0;
@@ -164,15 +179,71 @@ int List_prepend(List* pList, void* pItem)
 // then do not change the pList and return NULL.
 void* List_remove(List* pList)
 {
+	void* item;
+
 	if(pList->currNode == LIST_OOB_END || pList->currNode == LIST_OOB_START || pList->itemCount == 0)
 	{
 		return NULL;
 	}
 	else
 	{
-		if(pList->currNode == pList->head)
+		item = nodes[pList->currNode].itemP;
+		//Handles removal backtracking
+		++removedIndex;
+		removedNodes[removedIndex] = pList->currNode;
+
+		//If there is only one item in the list(head == tail)
+		if(pList->head == pList->tail)
 		{
-			
+			//Reset the node
+			nodes[pList->currNode].itemP = NULL;
+			nodes[pList->currNode].nextNode = 0; //UNNECESSARY
+			nodes[pList->currNode].prevNode = 0;//UNNECESSARY
+			//Reset the list 
+			pList->head = 0;
+			pList->tail = 0;
+			pList->currentNode = 0;
+			pList->itemCount = 0;
+		}
+		//If current node is looking at head and multiple entries
+		else if(pList->currNode == pList->head)
+		{
+
+			//Save temp data
+			unsigned int tempNextNode = nodes[pList->currNode].nextNode;
+			item = nodes[pList->currNode].itemP;
+			//Reset the node
+			nodes[pList->currNode].itemP = NULL;
+			nodes[pList->currNode].nextNode = 0;
+			nodes[pList->currNode].prevNode = 0;//UNNECESSARY
+			//Fix next nodes prev connection
+			nodes[tempNextNode].prevNode = LIST_OOB_START
+			//Change head and current to next
+			pList->head = tempNextNode;
+			pList->currentNode = tempNextNode;
+			--pList->itemCount;
+		}
+		//If current node is looking at tail and multiple entries
+		else if(pList->currNode == pList->tail)
+		{
+			//Save temp data
+			unsigned int tempPrevNode = nodes[pList->currNode].prevNode;
+			item = nodes[pList->currNode].itemP;
+			//Reset the node
+			nodes[pList->currNode].itemP = NULL;
+			nodes[pList->currNode].nextNode = 0;//UNNECESSARY
+			nodes[pList->currNode].prevNode = 0;
+			//Fix prev nodes next connection
+			nodes[tempPrevNode].nextNode = LIST_OOB_END
+			//Change tail and current to next
+			pList->tail = tempPrevNode;
+			pList->currentNode = tempPrevNode;
+			--pList->itemCount;
+		}
+		//Somewhere in middle
+		else
+		{
+
 		}
 	}
 }
