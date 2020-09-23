@@ -161,7 +161,6 @@ int List_add(List* pList, void* pItem)
 		return -1;
 	}
 
-	printf("Going to write NodeIndex : %d \n",NodeIndex);
 	// If the list is empty
 	if(pList->itemCount == 0)
 	{
@@ -436,37 +435,61 @@ void printAllLists()
 
 void printOneList(List* Plist)
 {
-	unsigned int head = Plist->head;
-	printf("prev : %u,",nodes[head].prevNode);
-	while( head != LIST_OOB_END)
+	unsigned int p = nodes[Plist->head].prevNode;
+	int i = 1;
+	printf("(%d) : %u --> \n",i,p);
+	p = Plist->head;
+	while( p != LIST_OOB_END)
 	{
-		printf("next : %u --> ",nodes[head].nextNode);
-		head = nodes[head].nextNode;
+		printf("(%d) : %u, \"%d\" --> \n",i,p,*(int*)(nodes[p].itemP));
+		++i;
+		p = nodes[p].nextNode;
 	}
-	printf("\n");
 }
+
 int main()
 {
-	List* mylist[LIST_MAX_NUM_HEADS];
-	for(int i =0;i<LIST_MAX_NUM_HEADS;i++)
-	{
-		mylist[i] = List_create();
-	}
-	int a = 33;
-	for(int i = 0;i<3;i++)
-	{
-		for(int x = 0;x<6;x++)
-		List_add(mylist[i],&a);
+	List* list1 = List_create();
+	//Lets check empty list
+	printf("%d\n",List_count(list1));
+	if(List_first(list1) != NULL)
+		printf("ERROR\n");
+	if(List_last(list1) != NULL)
+		printf("ERROR\n");
+	if(List_next(list1) != NULL)
+		printf("ERROR\n");
+	if(List_prev(list1) != NULL)
+		printf("ERROR\n");
+	if(List_curr(list1) != NULL)
+		printf("ERROR\n");
+	if(List_trim(list1) != NULL)
+		printf("ERROR\n");
+	if(List_remove(list1) != NULL)
+		printf("ERROR\n");
 
-	printOneList(mylist[i]);
-	}
+	int list1items[10] = {0,1,2,3,4,5,6,7,8,9};
+	for(int i = 0;i < 10; i++)
+		List_add(list1,&list1items[i]);
+	//Printing the list(should be taking nodes 103 to 94)
+	printOneList(list1);
+	//Printing current and go back 5 steps and 1 step forward, then remove the item, go back two step and remove again
+	printf("Current = %d \n",*(int*)(List_curr(list1)));
+	for(int i = 0;i<5;i++)
+		printf("Current = %d \n",*(int*)(List_prev(list1)));
+	printf("Current = %d \n",*(int*)(List_next(list1)));
+	printf("Removing = %d \n",*(int*)(List_remove(list1)));
+	printf("Current = %d \n",*(int*)(List_prev(list1)));
+	printf("Current = %d \n",*(int*)(List_prev(list1)));
+	printf("Removing = %d \n",*(int*)(List_remove(list1)));
+	//Print disjointed list
+	printOneList(list1);
+	printf("//////////////\n");
+	//Add two items to the list , it should be non disjoint again
+	List_add(list1,&list1items[3]);
+	List_add(list1,&list1items[5]);
+	//Print non disjointed list
+	printOneList(list1);
 
-	//printAllNodes();
-	//printAllLists();
-//	for(int i = 0;i<103;i++)
-//	{
-//		int t = List_add(mylist,&a);
-//		printf("%d \n ",*(unsigned int*)List_remove(mylist));
-//	}
+	//Try creating 11 Lists
 	return 0;
 }
