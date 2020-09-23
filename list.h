@@ -27,6 +27,7 @@ struct List_s{
 	unsigned int tail;
     unsigned int currNode;
     unsigned int itemCount;
+    bool inUse;
 
 };
 

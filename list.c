@@ -4,9 +4,8 @@
 
 static Node nodes[LIST_MAX_NUM_NODES_OOB];
 static List lists[LIST_MAX_NUM_HEADS];
-static unsigned int removedNodes[LIST_MAX_NUM_NODES_OOB];
+static unsigned int removedNodes[LIST_MAX_NUM_NODES_OOB] = {LIST_MAX_NUM_NODES_OOB - 1,0};
 static unsigned int removedIndex = 0;
-removedNodes[removedIndex] = LIST_MAX_NUM_NODES_OOB - 1; // starts from last index
 static bool listAvailable[LIST_MAX_NUM_HEADS];
 
 // Makes a new, empty list, and returns its reference on success. 
@@ -15,9 +14,9 @@ List* List_create()
 {
 	for(int i = 0;i < LIST_MAX_NUM_HEADS;++i)
 	{
-		if(!listAvailable[i])
+		if(!lists[i].inUse)
 		{
-			listAvailable[i] = true;
+			lists[i].inUse = true;
 			lists[i].head = LIST_OOB_START;
 			lists[i].head = LIST_OOB_END;
 			lists[i].currNode = LIST_OOB_START;
@@ -257,6 +256,12 @@ int List_prepend(List* pList, void* pItem)
 	return List_add(pList,pItem);
 }
 
+static void removeNodeHandler(int NodeIndex)
+{
+
+	//Handles removal backtracking
+	removedNodes[++removedIndex] = NodeIndex;
+}
 // Return current item and take it out of pList. Make the next item the current one.
 // If the current pointer is before the start of the pList, or beyond the end of the pList,
 // then do not change the pList and return NULL.
@@ -271,8 +276,7 @@ void* List_remove(List* pList)
 	else
 	{
 		item = nodes[pList->currNode].itemP;
-		//Handles removal backtracking
-		removedNodes[++removedIndex] = pList->currNode;
+		removeNodeHandler(pList->currNode);
 
 		//If there is only one item in the list(head == tail)
 		if(pList->head == pList->tail)
@@ -342,28 +346,53 @@ void* List_remove(List* pList)
 		}
 		return item;
 	}
-}/*
+}
+
 // Adds pList2 to the end of pList1. The current pointer is set to the current pointer of pList1. 
 // pList2 no longer exists after the operation; its head is available
 // for future operations.
 void List_concat(List* pList1, List* pList2)
 {
-	
+	if(pList1->itemCount == 0 || pList2->itemCount == 0)
+	{
+		return;
+	}
+	else
+	{
+		pList1->itemCount += pList2->itemCount;
+		nodes[pList1->tail].nextNode = pList2->head;
+		pList1->tail = pList2->tail;
+		pList2->inUse = false;
+	}
 }
 // Delete pList. pItemFreeFn is a pointer to a routine that frees an item. 
 // It should be invoked (within List_free) as: (*pItemFreeFn)(itemToBeFreedFromNode);
 // pList and all its nodes no longer exists after the operation; its head and nodes are 
 // available for future operations.
-typedef void (*FREE_FN)(void* pItem)
+typedef void (*FREE_FN)(void* pItem);
 void List_free(List* pList, FREE_FN pItemFreeFn)
 {
-	
+	pList->currNode = pList->head;
+	void* itemPtr = List_remove(pList);
+	while(itemPtr != NULL)
+	{
+		(*pItemFreeFn)(itemPtr);
+	}
+	pList->inUse = false;
 }
 // Return last item and take it out of pList. Make the new last item the current one.
 // Return NULL if pList is initially empty.
 void* List_trim(List* pList)
 {
-	
+	if(pList->itemCount == 0)
+	{
+		return NULL;
+	}
+	pList->currNode = pList->tail;
+	int beforeTail = nodes[pList->tail].prevNode;
+	void* itemPTR = List_remove(pList);
+	pList->currNode = beforeTail;
+	return itemPTR;
 }
 // Search pList, starting at the current item, until the end is reached or a match is found. 
 // In this context, a match is determined by the comparator parameter. This parameter is a
@@ -377,12 +406,16 @@ void* List_trim(List* pList)
 // 
 // If the current pointer is before the start of the pList, then start searching from
 // the first node in the list (if any).
-typedef bool (*COMPARATOR_FN)(void* pItem, void* pComparisonArg)
+typedef bool (*COMPARATOR_FN)(void* pItem, void* pComparisonArg);
 void* List_search(List* pList, COMPARATOR_FN pComparator, void* pComparisonArg)
 {
 	
 }
-*/
+
+
+
+
+
 void printAllNodes()
 {
 	for(int i = 0;i<LIST_MAX_NUM_NODES_OOB;++i)
@@ -422,7 +455,7 @@ int main()
 	int a = 33;
 	for(int i = 0;i<3;i++)
 	{
-		for(int x = 0;x<40;x++)
+		for(int x = 0;x<6;x++)
 		List_add(mylist[i],&a);
 
 	printOneList(mylist[i]);
