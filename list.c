@@ -4,7 +4,7 @@
 
 static Node nodes[LIST_MAX_NUM_NODES_OOB];
 static List lists[LIST_MAX_NUM_HEADS];
-static unsigned int removedNodes[LIST_MAX_NUM_NODES_OOB] = {LIST_MAX_NUM_NODES_OOB - 1,0};
+static unsigned int removedNodes[LIST_MAX_NUM_NODES_OOB] = {[0] =(LIST_MAX_NUM_NODES_OOB - 1)};
 static unsigned int removedIndex = 0;
 static bool listAvailable[LIST_MAX_NUM_HEADS];
 
