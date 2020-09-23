@@ -6,7 +6,7 @@ static Node nodes[LIST_MAX_NUM_NODES_OOB];
 static List lists[LIST_MAX_NUM_HEADS];
 static unsigned int removedNodes[LIST_MAX_NUM_NODES_OOB];
 static unsigned int removedIndex = 0;
-static unsigned int nodeArm = LIST_MAX_NUM_NODES_OOB - 1; // starts from last index
+removedNodes[removedIndex] = LIST_MAX_NUM_NODES_OOB - 1; // starts from last index
 static bool listAvailable[LIST_MAX_NUM_HEADS];
 
 // Makes a new, empty list, and returns its reference on success. 
@@ -18,6 +18,10 @@ List* List_create()
 		if(!listAvailable[i])
 		{
 			listAvailable[i] = true;
+			lists[i].head = LIST_OOB_START;
+			lists[i].head = LIST_OOB_END;
+			lists[i].currNode = LIST_OOB_START;
+			lists[i].itemCount = 0;
 			return &(lists[i]);
 		}
 	}
@@ -30,6 +34,7 @@ int List_count(List* pList)
 {
 	return pList->itemCount;
 }
+
 // Returns a pointer to the first item in pList and makes the first item the current item.
 // Returns NULL and sets current item to NULL if list is empty.
 void* List_first(List* pList)
@@ -37,7 +42,7 @@ void* List_first(List* pList)
 	if(pList->itemCount != 0)
 	{
 		pList->currNode = pList->head;
-		return nodes[pList->head].itemP;
+		return nodes[pList->currNode].itemP;
 	}
 	else
 	{
@@ -45,6 +50,7 @@ void* List_first(List* pList)
 		return NULL;
 	}
 }
+
 // Returns a pointer to the last item in pList and makes the last item the current item.
 // Returns NULL and sets current item to NULL if list is empty.
 void* List_last(List* pList)
@@ -52,57 +58,110 @@ void* List_last(List* pList)
 	if(pList->itemCount != 0)
 	{
 		pList->currNode = pList->tail;
-		return nodes[pList->tail].itemP;
+		return nodes[pList->currNode].itemP;
 	}
 	else
 	{
 		nodes[pList->currNode].itemP = NULL;
 		return NULL;
 	}
-}/*
+}
+
 // Advances pList's current item by one, and returns a pointer to the new current item.
 // If this operation advances the current item beyond the end of the pList, a NULL pointer 
 // is returned and the current item is set to be beyond end of pList.
 void* List_next(List* pList)
 {
+	if(pList->itemCount == 0)
+	{
+		return NULL;
+	}
+
+	if(pList->currNode == LIST_OOB_END)
+	{
+		return NULL;
+	}
+	else if(nodes[pList->currNode].nextNode == LIST_OOB_END)
+	{
+		pList->currNode = LIST_OOB_END;
+		return NULL;
+	}
+	else
+	{
+		pList->currNode = nodes[pList->currNode].nextNode;
+		return nodes[pList->currNode].itemP;
+	}
 
 }
+
 // Backs up pList's current item by one, and returns a pointer to the new current item. 
 // If this operation backs up the current item beyond the start of the pList, a NULL pointer 
 // is returned and the current item is set to be before the start of pList.
 void* List_prev(List* pList)
 {
-	
+	if(pList->itemCount == 0)
+	{
+		return NULL;
+	}
+
+	if(pList->currNode == LIST_OOB_START)
+	{
+		return NULL;
+	}
+	else if(nodes[pList->currNode].prevNode == LIST_OOB_START)
+	{
+		pList->currNode = LIST_OOB_START;
+		return NULL;
+	}
+	else
+	{
+		pList->currNode = nodes[pList->currNode].prevNode;
+		return nodes[pList->currNode].itemP;
+	}
 }
+
 // Returns a pointer to the current item in pList.
 void* List_curr(List* pList)
 {
-	
-}*/
+	return nodes[pList->currNode].itemP;
+}
+
+static int getFreeNodeHandler()
+{
+	//Handles removal backtracking(removedIndex 0 means non disjoint array, 0> disjoint)
+	int NodeIndex;
+
+	//Node full, NO SPACE
+	if(removedIndex == 0 && removedNodes[removedIndex] == 1)
+	{
+		return -1;
+	}
+	//Not disjoint but there is some space
+	else if(removedIndex == 0)
+	{
+		NodeIndex = removedNodes[removedIndex]--;
+	}
+	//Disjoint and there is some space, fill the gap
+	else
+	{
+		NodeIndex = removedNodes[removedIndex--];
+	}
+
+	return NodeIndex;
+}
+
 // Adds the new item to pList directly after the current item, and makes item the current item. 
 // If the current pointer is before the start of the pList, the item is added at the start. If 
 // the current pointer is beyond the end of the pList, the item is added at the end. 
 // Returns 0 on success, -1 on failure.
 int List_add(List* pList, void* pItem)
 {
-	//Handles removal backtracking(removedIndex 0 means non disjoint array, 0> disjoint)
-	int NodeIndex;
-	//Node array full
-	if(removedIndex == 0 && nodeArm == 1)
+	int NodeIndex = getFreeNodeHandler();
+	if(NodeIndex < 0)
 	{
-		printf("K1 %d \n",pList->itemCount);
 		return -1;
 	}
-	//Not disjoint
-	else if(removedIndex == 0)
-	{
-		NodeIndex = nodeArm--;
-	}
-	//Disjoint
-	else
-	{
-		NodeIndex = removedNodes[removedIndex--];
-	}
+
 	printf("Going to write NodeIndex : %d \n",NodeIndex);
 	// If the list is empty
 	if(pList->itemCount == 0)
@@ -138,7 +197,7 @@ int List_add(List* pList, void* pItem)
 			pList->tail = NodeIndex;
 			pList->currNode = NodeIndex;
 		}
-		//Current pointer at the last node(one head or last node)
+		//Current pointer at the last node(one item or last node)
 		else if(pList->currNode == pList->tail)
 		{
 			nodes[pList->currNode].nextNode = NodeIndex;
@@ -163,27 +222,41 @@ int List_add(List* pList, void* pItem)
 	++(pList->itemCount);
 	return 0;
 }
-/*
+
 // Adds item to pList directly before the current item, and makes the new item the current one. 
 // If the current pointer is before the start of the pList, the item is added at the start. 
 // If the current pointer is beyond the end of the pList, the item is added at the end. 
 // Returns 0 on success, -1 on failure.
 int List_insert(List* pList, void* pItem)
 {
+	if(pList->currNode == LIST_OOB_START || pList->currNode == LIST_OOB_END)
+	{
+		return List_add(pList,pItem);
+	}
+	else
+	{
+		pList->currNode = nodes[pList->currNode].prevNode;
+		return List_add(pList,pItem);
+	}
 	
 }
+
 // Adds item to the end of pList, and makes the new item the current one. 
 // Returns 0 on success, -1 on failure.
 int List_append(List* pList, void* pItem)
 {
-	
+	pList->currNode = LIST_OOB_END;
+	return List_add(pList,pItem);
 }
+
 // Adds item to the front of pList, and makes the new item the current one. 
 // Returns 0 on success, -1 on failure.
 int List_prepend(List* pList, void* pItem)
 {
-	
-}*/
+	pList->currNode = LIST_OOB_START;
+	return List_add(pList,pItem);
+}
+
 // Return current item and take it out of pList. Make the next item the current one.
 // If the current pointer is before the start of the pList, or beyond the end of the pList,
 // then do not change the pList and return NULL.
