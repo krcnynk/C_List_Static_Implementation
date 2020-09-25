@@ -128,4 +128,11 @@ void* List_trim(List* pList);
 typedef bool (*COMPARATOR_FN)(void* pItem, void* pComparisonArg);
 void* List_search(List* pList, COMPARATOR_FN pComparator, void* pComparisonArg);
 
+void printAllNodes();
+
+void printAllLists();
+
+void printOneList(List* Plist);
+
+
 #endif
