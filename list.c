@@ -8,6 +8,8 @@ static unsigned int removedNodes[LIST_MAX_NUM_NODES_OOB] = {[0] =(LIST_MAX_NUM_N
 static unsigned int removedIndex = 0;
 static bool listAvailable[LIST_MAX_NUM_HEADS];
 
+//Changes
+
 // Makes a new, empty list, and returns its reference on success. 
 // Returns a NULL pointer on failure.
 List* List_create()
